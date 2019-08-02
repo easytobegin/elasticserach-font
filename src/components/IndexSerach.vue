@@ -1,0 +1,447 @@
+<template>
+  <div>
+    <el-row :gutter="20">
+      <el-col :span="1">
+        <el-tag type="success">当前索引</el-tag>
+      </el-col>
+      <el-col :span="4">
+        <el-select filterable class="index_input_style" v-model="indexValue" placeholder="请选择索引" @change="generateTransferData(indexValue)">
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+            >
+          </el-option>
+        </el-select>
+      </el-col>
+      <el-col :span="5">
+        <el-button type = "primary" @click="searchIndexData()">获取索引列表</el-button>
+        <el-button type="warning" icon="el-icon-edit" @click="if_show">添加筛选器</el-button>
+        <el-button>选项</el-button>
+      </el-col>
+      <el-col :span="8">
+        <el-input v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
+      </el-col>
+      <el-col :span="2">
+        <el-switch
+          v-model="isStar"
+          active-text="模糊匹配*"
+          inactive-text="精确匹配">
+        </el-switch>
+      </el-col>
+      <el-col :span="2">
+        <el-button type="success" @click="generateJsonData()">搜索</el-button>
+      </el-col>
+      <span>共找到<span style="color:red;">{{total_num}}</span>条记录</span>
+    </el-row>
+    <el-row>
+      <el-col :span="24">
+        <el-collapse v-model="activeNames" @change="handleChange" v-show="is_show">
+          <el-collapse-item title="过滤参数" name="2">
+            <el-row v-for="(index, number) in transfer_data" :key="index.label" :gutter="20">
+              <el-col :span="4">
+                <el-tag type="success">{{index.label}}</el-tag>
+              </el-col>
+              <el-col :span="12">
+                <el-input v-model="index.content" placeholder="请输入参数值" :disabled="index.disable"></el-input>
+              </el-col>
+              <el-col :span="4">
+                <el-button type="success" @click="set_filter(number)">设置</el-button>
+              </el-col>
+              <el-col :span="4">
+                <el-button type="danger" @click="no_set_filter(number)">不设置</el-button>
+              </el-col>
+            </el-row>
+          </el-collapse-item>
+          <el-collapse-item title="只看哪些字段" name="1">
+            <el-transfer
+              :titles="['待选字段', '已选字段']"
+              filterable
+              filter-placeholder="输入要筛选的字段"
+              v-model="transfer_value"
+              :data="transfer_data">
+            </el-transfer>
+          </el-collapse-item>
+          <el-collapse-item title="其他参数设置" name="5">
+            <el-col :span="4">
+                <el-tag type="success">查询超时时间(s)</el-tag>
+              </el-col>
+              <el-col :span="6">
+                <el-input-number v-model="extra_param.timeout" @change="timeout_c" :min="1" :max="1000" label="超时时间"></el-input-number>
+              </el-col>
+          </el-collapse-item>
+        </el-collapse>
+      </el-col>
+    </el-row>
+    <el-row>
+      <el-col :span="2">
+        <el-switch
+          v-model="orderby"
+          active-text="时间降序显示"
+          inactive-text="时间升序显示">
+        </el-switch>
+      </el-col>
+      <el-col :span="3"><el-tag>不重新搜索，高亮搜索表格内容</el-tag></el-col>
+      <el-col :span="16">
+        <el-input
+        style="width:40%;"
+        v-model="search"
+        size="mini"
+        placeholder="输入需要高亮的内容"/>
+      </el-col>
+    </el-row>
+    <el-row>
+       <el-col :span="24">
+          <el-table
+            :data="tableData"
+            border
+            style="width: 99%">
+            <el-table-column
+              prop="id"
+              label="唯一号Id"
+              sortable
+              width="180">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.id)" ></span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="timestamp"
+              label="发生时间"
+              sortable
+              width="180">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.timestamp)" ></span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="index"
+              label="索引名"
+              width="180">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.index)" ></span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="score"
+              label="分数"
+              sortable
+              width="120">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.score)" ></span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="type"
+              label="类型"
+              sortable
+              width="120">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.type)" ></span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="source"
+              label="内容">
+              <template slot-scope="scope">
+                  <span v-html="highLight(scope.row.source)" ></span>
+              </template>
+            </el-table-column>
+          </el-table>
+      </el-col>
+    </el-row>
+    <el-row>
+      <div class="block">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="this.paper.pageNumber"
+        :page-sizes="[5, 10, 15, 20]"
+        :page-size="this.paper.pageSize"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="this.total_num">
+      </el-pagination>
+    </div>
+    </el-row>
+  </div>
+</template>
+
+<script>
+export default {
+  data () {
+    return {
+      orderby: true,
+      likeSearch: '',
+      isStar: true,
+      search: '',
+      is_show: false,
+      transfer_data: [],
+      transfer_value: [],
+      options: [],
+      indexValue: '',
+      activeNames: [],
+      params: {
+        pageNumber: 1,
+        pageSize: 10,
+        index: '',
+        keyword: '',
+        timeout: '',
+        extra: {},
+        source: [],
+        timestampOrder: ''
+      },
+      alreadyChoiceArray: [],
+      paper: {
+        pageNumber: 1,
+        pageSize: 10
+      },
+      extra_param: {
+        timeout: 10
+      },
+      log_obj: {},
+      total_num: 0,
+      tableData: [
+        {
+          id: '',
+          index: '',
+          score: '',
+          type: '',
+          timestamp: '',
+          source: ''
+        }
+      ],
+      currentPage4: 4,
+      timestampWord: []
+    }
+  },
+  computed: {
+    tables () {
+      const search = this.search
+      if (search) {
+        return this.tableData.filter(dataNews => {
+          return Object.keys(dataNews).some(key => {
+            return String(dataNews[key].toLowerCase().indexOf(search.toLow) > -1)
+          })
+        })
+      }
+      return this.tableData
+    }
+  },
+  methods: {
+    highLight (val) {
+      val = (val + '').toLowerCase()
+      if (val.indexOf(this.search.toLowerCase()) !== -1 && this.search.toLowerCase() !== '') {
+        return val.replace(this.search, '<font color="#ffffff" style="background: #73cc48">' + this.search + '</font>')
+      } else {
+        return val
+      }
+    },
+    handleSizeChange (val) {
+      this.params.pageSize = val
+      this.generateJsonData()
+    },
+    handleCurrentChange (val) {
+      this.params.pageNumber = val
+      this.generateJsonData()
+    },
+    formatDate (datetime) {
+      // 获取年月日时分秒值  slice(-2)过滤掉大于10日期前面的0
+      var year = new Date(datetime).getFullYear()
+      var month = ('0' + (new Date(datetime).getMonth() + 1)).slice(-2)
+      var date = ('0' + new Date(datetime).getDate()).slice(-2)
+      var hour = ('0' + new Date(datetime).getHours()).slice(-2)
+      var minute = ('0' + new Date(datetime).getMinutes()).slice(-2)
+      var second = ('0' + new Date(datetime).getSeconds()).slice(-2)
+      // 拼接
+      var result = year + '-' + month + ':' + date + ' ' + hour + ':' + minute + ':' + second
+      // 返回
+      return result
+    },
+    showData (logObj) {
+      this.tableData = []
+      logObj.hits.hits.forEach((element, index) => {
+        let str = ''
+        for (var item in element._source) {
+          str += (item + ': ' + element._source[item] + ',')
+        }
+        str = str.substring(0, str.length - 1)
+        let time = ''
+        for (var ele in element._source) {
+          // console.log(ele)
+          if (isNaN(element._source[ele]) && !isNaN(Date.parse(element._source[ele]))) {
+            time = this.formatDate(Date.parse(element._source[ele]))
+            break
+          } else {
+            time = '无'
+          }
+        }
+        this.tableData.push({
+          id: element._id,
+          index: element._index,
+          score: element._score,
+          type: element._type,
+          timestamp: time,
+          source: str
+        })
+      })
+    },
+    generateJsonData () {
+      this.params.timestampOrder = ''
+      this.params.keyword = ''
+      // 模糊匹配
+      if (this.isStar) {
+        this.params.keyword = '*' + this.likeSearch + '*'
+      } else {
+        this.params.keyword = this.likeSearch
+      }
+      if (this.isStar === false && (this.likeSearch === null || this.likeSearch === '')) {
+        this.$notify.error({
+          title: '错误',
+          message: '精确匹配模式下，输入不能为空！'
+        })
+        return
+      }
+      this.params.index = this.indexValue
+      this.params.source = []
+      this.transfer_value.forEach((element, index) => {
+        this.params.source.push(this.transfer_data[element].label)
+      })
+      // 优先寻找@time
+      for (var element in this.transfer_data) {
+        let ele = this.transfer_data[element].label
+        if (ele.indexOf('@time') !== -1) {
+          this.params.timestampOrder = ele
+          break
+        }
+        if (ele.indexOf('time') !== -1) {
+          this.params.timestampOrder = ele
+        }
+      }
+      // 降序
+      if (this.orderby && this.params.timestampOrder !== '') {
+        this.params.timestampOrder += ':desc'
+      } else if (!this.orderby && this.params.timestampOrder !== '') {
+        this.params.timestampOrder += ':asc'
+      } else {
+        this.params.timestampOrder = ''
+      }
+      let str = {}
+      this.transfer_data.forEach((element, index) => {
+        let label = element.label
+        let content = element.content
+        if (content !== null && content !== '') {
+          str[label] = content
+        }
+      })
+      this.params.extra = str
+      this.$post('/keywordMatch', this.params).then((data) => {
+        if (data.ok === true) {
+          this.log_obj = JSON.parse(data.message)
+          this.total_num = this.log_obj.hits.total
+          this.showData(this.log_obj)
+          this.search = this.likeSearch
+        } else {
+          this.$notify.error({
+            title: '错误',
+            message: '请求数据失败！'
+          })
+        }
+      })
+    },
+    // pageNumber_c (val) {
+    //   this.params.pageNumber = val
+    // },
+    // pageSize_c (val) {
+    //   this.params.pageSize = val
+    // },
+    timeout_c (val) {
+      this.params.timeout = val + 's'
+    },
+    set_filter (number) {
+      this.transfer_data[number].disable = false
+    },
+    no_set_filter (number) {
+      this.transfer_data[number].disable = true
+    },
+    if_show () {
+      this.is_show = !this.is_show
+    },
+    handleChange (val) {
+      // console.log(val)
+    },
+    searchIndexData () {
+      this.$fetch('/index').then((data) => {
+        if (data.ok === true) {
+          this.options = []
+          data.data.forEach(element => {
+            this.options.push({'value': element.index, 'label': element.index})
+          })
+        } else {
+          this.$notify.error({
+            title: '错误',
+            message: '请求索引数据失败！'
+          })
+        }
+      })
+    },
+    generateTransferData (value) {
+      this.is_show = true
+      // 生成穿梭框数据
+      this.$fetch('/indexDetail', { index: value }).then((data) => {
+        if (data.ok === true) {
+          this.transfer_data = []
+          this.transfer_value = []
+          data.data.forEach((element, index) => {
+            this.transfer_data.push({
+              label: element,
+              key: index,
+              disable: true,
+              content: ''
+            })
+          })
+        } else {
+          this.$notify.error({
+            title: '错误',
+            message: '请求详细索引信息失败'
+          })
+        }
+      })
+    }
+  },
+  mounted () {
+    this.searchIndexData()
+  }
+}
+</script>
+
+<style>
+.el-row {
+    margin-bottom: 20px;
+  }
+.index_input_style {
+  width: 250px;
+}
+.el-transfer-panel__body {
+  width: 200px;
+  height: 500px;
+}
+.el-transfer-panel__list.is-filterable {
+  width: 200px;
+  height: 500px;
+  padding-top: 0;
+}
+.el-transfer-panel {
+    border: 1px solid #EBEEF5;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #FFF;
+    display: inline-block;
+    vertical-align: middle;
+    width: 200px;
+    max-height: 100%;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    position: relative;
+}
+</style>
