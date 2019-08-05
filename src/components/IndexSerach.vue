@@ -144,8 +144,12 @@
             <el-table-column
               prop="source"
               label="内容">
-              <template slot-scope="scope">
-                  <span v-html="highLight(scope.row.source)" ></span>
+              <template>
+                  <span style="margin-right:10px;" v-for="index in resultStr" :key="index.key">
+                    <el-tag size="mini" effect="dark" color="rgba(0, 46, 63, 0.1)" type="info">{{index.key + ':'}}</el-tag>
+                    <span v-html="highLight(index.value)"></span>
+                  </span>
+                  <!-- <span v-html="highLight(scope.row.source)" ></span> -->
               </template>
             </el-table-column>
           </el-table>
@@ -212,7 +216,9 @@ export default {
         }
       ],
       currentPage4: 4,
-      timestampWord: []
+      timestampWord: [],
+      sourceStr: '',
+      resultStr: []
     }
   },
   computed: {
@@ -258,17 +264,39 @@ export default {
       // 返回
       return result
     },
-    showData (logObj) {
-      this.tableData = []
-      logObj.hits.hits.forEach((element, index) => {
-        let str = ''
-        for (var item in element._source) {
-          str += (item + ': ' + element._source[item] + ',')
+    parseJson (temp, jsonObj) {
+      for (var key in jsonObj) {
+        var element = jsonObj[key]
+        if (element instanceof Array) {
+          // 数组不继续解析，不操作
+        } else if (typeof (element) === 'object') {
+          let temp1 = ''
+          temp1 = temp
+          temp += key + '.'
+          this.parseJson(temp, element)
+          // 回溯
+          temp = temp1
+        } else {
+          let temp1 = ''
+          temp1 = temp
+          temp += key + '.'
+          this.resultStr.push({'key': temp.substring(0, temp.length - 1), 'value': element})
+          temp = temp1
         }
-        str = str.substring(0, str.length - 1)
+      }
+    },
+    showData (logObj) {
+      console.log(logObj)
+      this.tableData = []
+      // console.log(logObj)
+      logObj.hits.hits.forEach((element, index) => {
+        // let str = ''
+        // for (var item in element._source) {
+        //   str += (item + ': ' + element._source[item] + ',')
+        // }
+        // str = str.substring(0, str.length - 1)
         let time = ''
         for (var ele in element._source) {
-          // console.log(ele)
           if (isNaN(element._source[ele]) && !isNaN(Date.parse(element._source[ele]))) {
             time = this.formatDate(Date.parse(element._source[ele]))
             break
@@ -276,13 +304,25 @@ export default {
             time = '无'
           }
         }
+        this.sourceStr = ''
+        this.resultStr = []
+        // this.getTree('', element._source)
+        this.parseJson('', element._source)
+        let result = ''
+        this.resultStr.forEach(source => {
+          result += (source.key + ': ' + source.value + ',')
+        })
+        result = result.substring(0, result.length - 1)
+        if (element._score === null || element._score === '') {
+          element._score = '-'
+        }
         this.tableData.push({
           id: element._id,
           index: element._index,
           score: element._score,
           type: element._type,
           timestamp: time,
-          source: str
+          source: result
         })
       })
     },
@@ -415,7 +455,12 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
+.el-tag--dark.el-tag--info {
+    background-color: #909399;
+    border-color: #909399;
+    color: #000;
+}
 .el-row {
     margin-bottom: 20px;
   }
