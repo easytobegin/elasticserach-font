@@ -144,8 +144,8 @@
             <el-table-column
               prop="source"
               label="内容">
-              <template>
-                  <span style="margin-right:10px;" v-for="index in resultStr" :key="index.key">
+              <template slot-scope="scope">
+                  <span style="margin-right:10px;" v-for="index in scope.row.source" :key="index.key">
                     <el-tag size="mini" effect="dark" color="rgba(0, 46, 63, 0.1)" type="info">{{index.key + ':'}}</el-tag>
                     <span v-html="highLight(index.value)"></span>
                   </span>
@@ -212,7 +212,7 @@ export default {
           score: '',
           type: '',
           timestamp: '',
-          source: ''
+          source: []
         }
       ],
       currentPage4: 4,
@@ -265,6 +265,7 @@ export default {
       return result
     },
     parseJson (temp, jsonObj) {
+      console.log(jsonObj)
       for (var key in jsonObj) {
         var element = jsonObj[key]
         if (element instanceof Array) {
@@ -286,7 +287,6 @@ export default {
       }
     },
     showData (logObj) {
-      console.log(logObj)
       this.tableData = []
       // console.log(logObj)
       logObj.hits.hits.forEach((element, index) => {
@@ -308,11 +308,13 @@ export default {
         this.resultStr = []
         // this.getTree('', element._source)
         this.parseJson('', element._source)
-        let result = ''
+        let result = []
         this.resultStr.forEach(source => {
-          result += (source.key + ': ' + source.value + ',')
+          // result += (source.key + ': ' + source.value + ',')
+          result.push({key: source.key, value: source.value})
         })
-        result = result.substring(0, result.length - 1)
+        // result = result.substring(0, result.length - 1)
+        // console.log(result)
         if (element._score === null || element._score === '') {
           element._score = '-'
         }
