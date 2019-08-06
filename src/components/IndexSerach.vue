@@ -15,12 +15,11 @@
           </el-option>
         </el-select>
       </el-col>
-      <el-col :span="5">
-        <el-button type = "primary" @click="searchIndexData()">获取索引列表</el-button>
-        <el-button type="warning" icon="el-icon-edit" @click="if_show">添加筛选器</el-button>
-        <el-button>选项</el-button>
+      <el-col :span="4">
+        <el-button type = "primary" icon="el-icon-s-opportunity" @click="searchIndexData()">获取索引列表</el-button>
+        <el-button :type="filterType" icon="el-icon-edit" @click="if_show">{{showFilter}}</el-button>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="6">
         <el-input v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
       </el-col>
       <el-col :span="2">
@@ -30,15 +29,17 @@
           inactive-text="精确匹配">
         </el-switch>
       </el-col>
-      <el-col :span="2">
-        <el-button type="success" @click="generateJsonData()">搜索</el-button>
+      <el-col :span="5">
+        <el-button type="success" icon="el-icon-success" @click="generateJsonData()">搜索</el-button>
+        <el-button :type="timerType" :icon="refreshIcon" @click="timer">{{timerOpenOrClose}}</el-button>
+        <el-tag size="mini" effect="dark" type="warning">{{timeNumber + timeValue + "刷新一次"}}</el-tag>
       </el-col>
       <span>共找到<span style="color:red;">{{total_num}}</span>条记录</span>
     </el-row>
     <el-row>
       <el-col :span="24">
         <el-collapse v-model="activeNames" @change="handleChange" v-show="is_show">
-          <el-collapse-item title="过滤参数" name="2">
+          <el-collapse-item title="过滤参数" name="1">
             <el-row v-for="(index, number) in transfer_data" :key="index.label" :gutter="20">
               <el-col :span="4">
                 <el-tag type="success">{{index.label}}</el-tag>
@@ -54,7 +55,7 @@
               </el-col>
             </el-row>
           </el-collapse-item>
-          <el-collapse-item title="只看哪些字段" name="1">
+          <el-collapse-item title="只看哪些字段" name="2">
             <el-transfer
               :titles="['待选字段', '已选字段']"
               filterable
@@ -63,13 +64,24 @@
               :data="transfer_data">
             </el-transfer>
           </el-collapse-item>
-          <el-collapse-item title="其他参数设置" name="5">
+          <el-collapse-item title="其他参数设置" name="3">
             <el-col :span="4">
                 <el-tag type="success">查询超时时间(s)</el-tag>
               </el-col>
               <el-col :span="6">
                 <el-input-number v-model="extra_param.timeout" @change="timeout_c" :min="1" :max="1000" label="超时时间"></el-input-number>
               </el-col>
+          </el-collapse-item>
+          <el-collapse-item title="定时刷新设置" name="4">
+            <el-input-number :disabled="timerEnable" v-model="timeNumber" :min="1" :max="10000" label="输入时间"></el-input-number>
+            <el-select :disabled="timerEnable" v-model="timeValue" placeholder="天时分秒">
+              <el-option
+                v-for="item in timerOption"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value">
+              </el-option>
+            </el-select>
           </el-collapse-item>
         </el-collapse>
       </el-col>
@@ -175,6 +187,21 @@
 export default {
   data () {
     return {
+      showFilter: '显示筛选器',
+      timerEnable: false,
+      refreshIcon: 'el-icon-video-play',
+      timeNumber: 5,
+      timeValue: '秒',
+      timerOption: [
+        {label: '天', value: '天'},
+        {label: '时', value: '时'},
+        {label: '分', value: '分'},
+        {label: '秒', value: '秒'}
+      ],
+      filterType: 'warning',
+      timerType: 'primary',
+      timerFlag: true,
+      timerOpenOrClose: '开启刷新',
       orderby: true,
       likeSearch: '',
       isStar: true,
@@ -218,7 +245,8 @@ export default {
       currentPage4: 4,
       timestampWord: [],
       sourceStr: '',
-      resultStr: []
+      resultStr: [],
+      interval: ''
     }
   },
   computed: {
@@ -235,6 +263,45 @@ export default {
     }
   },
   methods: {
+    timer () {
+      let time = 0
+      if (this.timerFlag) {
+        switch (this.timeValue) {
+          case '秒':
+            time = this.timeNumber * 1000
+            break
+          case '分':
+            time = this.timeNumber * 1000 * 60
+            break
+          case '时':
+            time = this.timeNumber * 1000 * 3600
+            break
+          case '天':
+            time = this.timeNumber * 1000 * 3600 * 24
+            break
+        }
+        this.timerType = 'danger'
+        this.refreshIcon = 'el-icon-loading'
+        this.timerOpenOrClose = '停止刷新'
+        this.timerEnable = true
+        this.refresh(time)
+        this.timerFlag = false
+      } else {
+        this.timerType = 'primary'
+        this.refreshIcon = 'el-icon-video-play'
+        this.timerOpenOrClose = '开启刷新'
+        this.timerEnable = false
+        this.cancelRefresh()
+        this.timerFlag = true
+      }
+    },
+    refresh (seconds) {
+      window.clearInterval(this.interval)
+      this.interval = setInterval(this.generateJsonData, seconds)
+    },
+    cancelRefresh () {
+      window.clearInterval(this.interval)
+    },
     highLight (val) {
       val = (val + '').toLowerCase()
       if (val.indexOf(this.search.toLowerCase()) !== -1 && this.search.toLowerCase() !== '') {
@@ -265,7 +332,6 @@ export default {
       return result
     },
     parseJson (temp, jsonObj) {
-      console.log(jsonObj)
       for (var key in jsonObj) {
         var element = jsonObj[key]
         if (element instanceof Array) {
@@ -407,6 +473,13 @@ export default {
       this.transfer_data[number].disable = true
     },
     if_show () {
+      if (this.is_show) {
+        this.filterType = 'warning'
+        this.showFilter = '显示筛选器'
+      } else {
+        this.filterType = 'danger'
+        this.showFilter = '隐藏筛选器'
+      }
       this.is_show = !this.is_show
     },
     handleChange (val) {
@@ -429,6 +502,8 @@ export default {
     },
     generateTransferData (value) {
       this.is_show = true
+      this.filterType = 'danger'
+      this.showFilter = '隐藏筛选器'
       // 生成穿梭框数据
       this.$fetch('/indexDetail', { index: value }).then((data) => {
         if (data.ok === true) {
