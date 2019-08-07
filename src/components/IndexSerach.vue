@@ -40,7 +40,28 @@
       <el-col :span="24">
         <el-collapse v-model="activeNames" @change="handleChange" v-show="is_show">
           <el-collapse-item title="过滤参数" name="1">
-            <el-row v-for="(index, number) in transfer_data" :key="index.label" :gutter="20">
+            <el-button type="primary" style="margin-bottom:20px;" icon="el-icon-circle-plus" @click="plusOne()">新增</el-button>
+            <el-button type="danger" style="margin-bottom:20px;" icon="el-icon-error" @click="clearAll()">清除所有</el-button>
+            <el-row v-for="num in filterParamNums" :key="num.label">
+              <el-col :span='7'>
+               <el-select clearable filterable class="filterParam_style" v-model="num.label" placeholder="请选择过滤参数" @change="setParam(num)">
+                <el-option
+                  v-for="index in transfer_data"
+                  :key="index.label"
+                  :label="index.label"
+                  :value="index.label"
+                  >
+                </el-option>
+              </el-select>
+              </el-col>
+              <el-col :span="4">
+                <el-input placeholder="请输入值" style="margin-right:20px;" v-model="num.content"></el-input>
+              </el-col>
+              <el-col :span="2">
+                <el-button type="danger" icon="el-icon-minus" style="margin-left:20px;" @click="subOne(num)">删除</el-button>
+              </el-col>
+            </el-row>
+            <!-- <el-row v-for="(index, number) in transfer_data" :key="index.label" :gutter="20">
               <el-col :span="4">
                 <el-tag type="success">{{index.label}}</el-tag>
               </el-col>
@@ -53,7 +74,7 @@
               <el-col :span="4">
                 <el-button type="danger" @click="no_set_filter(number)">不设置</el-button>
               </el-col>
-            </el-row>
+            </el-row> -->
           </el-collapse-item>
           <el-collapse-item title="只看哪些字段" name="2">
             <el-transfer
@@ -187,6 +208,11 @@
 export default {
   data () {
     return {
+      value: '',
+      delete_show: false,
+      nums: 1,
+      filterParamNums: [],
+      filterParam: '',
       showFilter: '显示筛选器',
       timerEnable: false,
       refreshIcon: 'el-icon-video-play',
@@ -263,6 +289,30 @@ export default {
     }
   },
   methods: {
+    setParam (index) {
+      for (var i = 0; i < this.filterParamNums.length; i++) {
+        if (index.label === this.filterParamNums[i].label && index.number !== this.filterParamNums[i].number && index.label !== '') {
+          index.label = ''
+          this.$notify.error({
+            title: '错误',
+            message: '选择的字段不能重复'
+          })
+          break
+        }
+      }
+    },
+    clearAll () {
+      this.filterParamNums = []
+    },
+    subOne (index) {
+      this.filterParamNums.splice(index.number, 1)
+      for (var i = index.number; i < this.filterParamNums.length; i++) {
+        this.filterParamNums[i].number -= 1
+      }
+    },
+    plusOne () {
+      this.filterParamNums.push({label: '', content: '', number: this.filterParamNums.length})
+    },
     timer () {
       let time = 0
       if (this.timerFlag) {
@@ -435,7 +485,7 @@ export default {
         this.params.timestampOrder = ''
       }
       let str = {}
-      this.transfer_data.forEach((element, index) => {
+      this.filterParamNums.forEach((element, index) => {
         let label = element.label
         let content = element.content
         if (content !== null && content !== '') {
@@ -501,6 +551,7 @@ export default {
       })
     },
     generateTransferData (value) {
+      this.filterParamNums = []
       this.is_show = true
       this.filterType = 'danger'
       this.showFilter = '隐藏筛选器'
@@ -532,7 +583,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 .el-tag--dark.el-tag--info {
     background-color: #909399;
     border-color: #909399;
@@ -544,13 +595,16 @@ export default {
 .index_input_style {
   width: 250px;
 }
+.filterParam_style {
+  width: 500px;
+}
 .el-transfer-panel__body {
-  width: 200px;
-  height: 500px;
+  width: 500px;
+  height: 300px;
 }
 .el-transfer-panel__list.is-filterable {
-  width: 200px;
-  height: 500px;
+  width: 500px;
+  height: 300px;
   padding-top: 0;
 }
 .el-transfer-panel {
@@ -560,7 +614,7 @@ export default {
     background: #FFF;
     display: inline-block;
     vertical-align: middle;
-    width: 200px;
+    width: 500px;
     max-height: 100%;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
