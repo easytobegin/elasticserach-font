@@ -575,10 +575,16 @@ export default {
           })
         }
       })
+    },
+    // 设置分页最大上限，默认为PageSize * pageNumber < 10000
+    settingMaxPage () {
+      this.$put('/setMaxSize', {}).then((data) => {
+      })
     }
   },
   mounted () {
     this.searchIndexData()
+    this.settingMaxPage()
   }
 }
 </script>
