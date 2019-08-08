@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="warp-main">
     <el-row :gutter="20">
       <el-col :span="1">
         <el-tag type="success">当前索引</el-tag>
@@ -15,12 +15,14 @@
           </el-option>
         </el-select>
       </el-col>
-      <el-col :span="4">
+      <el-col :span="2">
         <el-button type = "primary" icon="el-icon-s-opportunity" @click="searchIndexData()">获取索引列表</el-button>
+      </el-col>
+      <el-col :span="2">
         <el-button :type="filterType" icon="el-icon-edit" @click="if_show">{{showFilter}}</el-button>
       </el-col>
-      <el-col :span="6">
-        <el-input v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
+      <el-col :span="5">
+        <el-input prefix-icon="el-icon-search" v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
       </el-col>
       <el-col :span="2">
         <el-switch
@@ -55,7 +57,7 @@
               </el-select>
               </el-col>
               <el-col :span="4">
-                <el-input placeholder="请输入值" style="margin-right:20px;" v-model="num.content"></el-input>
+                <el-input prefix-icon="el-icon-search" placeholder="请输入值" style="margin-right:20px;" v-model="num.content"></el-input>
               </el-col>
               <el-col :span="2">
                 <el-button type="danger" icon="el-icon-minus" style="margin-left:20px;" @click="subOne(num)">删除</el-button>
@@ -118,6 +120,7 @@
       <el-col :span="3"><el-tag>不重新搜索，高亮搜索表格内容</el-tag></el-col>
       <el-col :span="16">
         <el-input
+        prefix-icon="el-icon-search"
         style="width:40%;"
         v-model="search"
         size="mini"
@@ -131,12 +134,11 @@
             border
             style="width: 99%">
             <el-table-column
-              prop="id"
-              label="唯一号Id"
-              sortable
-              width="180">
+              prop="index"
+              label="索引名"
+              width="270">
               <template slot-scope="scope">
-                  <span v-html="highLight(scope.row.id)" ></span>
+                  <span v-html="highLight(scope.row.index)" ></span>
               </template>
             </el-table-column>
             <el-table-column
@@ -146,14 +148,6 @@
               width="180">
               <template slot-scope="scope">
                   <span v-html="highLight(scope.row.timestamp)" ></span>
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="index"
-              label="索引名"
-              width="180">
-              <template slot-scope="scope">
-                  <span v-html="highLight(scope.row.index)" ></span>
               </template>
             </el-table-column>
             <el-table-column
@@ -193,11 +187,11 @@
       <el-pagination
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
-        :current-page="this.paper.pageNumber"
+        :current-page="params.pageNumber"
         :page-sizes="[5, 10, 15, 20]"
-        :page-size="this.paper.pageSize"
+        :page-size="params.pageSize"
         layout="total, sizes, prev, pager, next, jumper"
-        :total="this.total_num">
+        :total="total_num">
       </el-pagination>
     </div>
     </el-row>
@@ -227,7 +221,7 @@ export default {
       filterType: 'warning',
       timerType: 'primary',
       timerFlag: true,
-      timerOpenOrClose: '开启刷新',
+      timerOpenOrClose: '自动刷新',
       orderby: true,
       likeSearch: '',
       isStar: true,
@@ -339,7 +333,7 @@ export default {
       } else {
         this.timerType = 'primary'
         this.refreshIcon = 'el-icon-video-play'
-        this.timerOpenOrClose = '开启刷新'
+        this.timerOpenOrClose = '自动刷新'
         this.timerEnable = false
         this.cancelRefresh()
         this.timerFlag = true
@@ -551,10 +545,14 @@ export default {
       })
     },
     generateTransferData (value) {
+      this.tableData = []
+      this.total_num = 0
       this.filterParamNums = []
       this.is_show = true
       this.filterType = 'danger'
       this.showFilter = '隐藏筛选器'
+      this.params.pageNumber = 1
+      this.params.pageSize = 10
       // 生成穿梭框数据
       this.$fetch('/indexDetail', { index: value }).then((data) => {
         if (data.ok === true) {
