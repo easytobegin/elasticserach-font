@@ -4,11 +4,15 @@
       <el-col :span="2">
         <el-button type="danger" v-show="managerIndex.show" @click="deleteIndex()">删除索引</el-button>
       </el-col>
-      <el-col :span="20">
+      <el-col :span="3">
+        <el-button type="success" @click="deleteIndexTimer()">定时删除索引设置</el-button>
+      </el-col>
+      <el-col :span="17">
         <el-input
           prefix-icon="el-icon-search"
           placeholder="索引名称模糊搜索"
           v-model="input"
+          @keyup.enter.native="search"
           clearable>
         </el-input>
       </el-col>
@@ -56,6 +60,14 @@
           prop="pristorageSize"
           label="原始占用大小">
         </el-table-column>
+         <el-table-column
+          fixed="right"
+          label="操作"
+          width="100">
+          <template slot-scope="scope">
+            <el-button @click="handleClick(scope.row)" type="text">索引详情</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-row>
     <el-row>
@@ -71,6 +83,17 @@
       </el-pagination>
     </div>
     </el-row>
+    <el-dialog
+      title="索引的详细信息"
+      :visible.sync="dialogVisible"
+      width="30%"
+      :before-close="handleClose">
+      <el-scrollbar style="height:100%">
+          <pre style="width:700px;height:700px;" >
+            {{indexInfoJson}}
+          </pre>
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>
 
@@ -78,6 +101,7 @@
 export default {
   data () {
     return {
+      indexInfoJson: '',
       managerIndex: {
         name: '单个',
         show: false
@@ -104,10 +128,30 @@ export default {
         docCount: '',
         storageSize: '',
         pristorageSize: ''
-      }]
+      }],
+      dialogVisible: false
     }
   },
   methods: {
+    handleClick (row) {
+      this.dialogVisible = true
+      this.$fetch('/indexInfo', { index: row.name }).then((data) => {
+        if (data.ok === true) {
+          this.indexInfoJson = JSON.parse(data.data)
+        } else {
+          this.$notify.error({
+            title: '错误',
+            message: '请求索引数据失败！'
+          })
+        }
+      })
+    },
+    handleClose (done) {
+      this.dialogVisible = false
+    },
+    deleteIndexTimer () {
+
+    },
     deleteIndex () {
       let indexs = []
       this.multipleSelection.forEach((index) => {

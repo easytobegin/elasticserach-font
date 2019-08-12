@@ -22,7 +22,7 @@
         <el-button :type="filterType" icon="el-icon-edit" @click="if_show">{{showFilter}}</el-button>
       </el-col>
       <el-col :span="5">
-        <el-input prefix-icon="el-icon-search" v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
+        <el-input prefix-icon="el-icon-search" @keyup.enter.native="generateJsonData"  v-model="likeSearch" placeholder="索引内容全局查找"></el-input>
       </el-col>
       <el-col :span="2">
         <el-switch
