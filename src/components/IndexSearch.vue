@@ -15,7 +15,7 @@
           </el-option>
         </el-select>
       </el-col>
-      <el-col :span="2">
+      <el-col :span="3">
         <el-button type = "primary" icon="el-icon-s-opportunity" @click="searchIndexData()">获取索引列表</el-button>
       </el-col>
       <el-col :span="2">
@@ -179,6 +179,14 @@
                   <!-- <span v-html="highLight(scope.row.source)" ></span> -->
               </template>
             </el-table-column>
+            <el-table-column
+              fixed="right"
+              label="操作"
+              width="140">
+              <template slot-scope="scope">
+                <el-button @click="handleClick(scope.row)" type="danger">删除该记录</el-button>
+              </template>
+            </el-table-column>
           </el-table>
       </el-col>
     </el-row>
@@ -266,7 +274,12 @@ export default {
       timestampWord: [],
       sourceStr: '',
       resultStr: [],
-      interval: ''
+      interval: '',
+      deleteParam: {
+        indexName: '',
+        type: '',
+        id: ''
+      }
     }
   },
   computed: {
@@ -283,6 +296,25 @@ export default {
     }
   },
   methods: {
+    handleClick (index) {
+      this.deleteParam.indexName = index.index
+      this.deleteParam.id = index.id
+      this.deleteParam.type = index.type
+      this.$post('/indexFunc/delete', this.deleteParam).then((data) => {
+        if (data.ok === true) {
+          this.$notify({
+            title: '成功',
+            message: '删除该记录成功',
+            type: 'success'
+          })
+        } else {
+          this.$notify.error({
+            title: '错误',
+            message: '删除该记录失败！'
+          })
+        }
+      })
+    },
     setParam (index) {
       for (var i = 0; i < this.filterParamNums.length; i++) {
         if (index.label === this.filterParamNums[i].label && index.number !== this.filterParamNums[i].number && index.label !== '') {
@@ -371,7 +403,7 @@ export default {
       var minute = ('0' + new Date(datetime).getMinutes()).slice(-2)
       var second = ('0' + new Date(datetime).getSeconds()).slice(-2)
       // 拼接
-      var result = year + '-' + month + ':' + date + ' ' + hour + ':' + minute + ':' + second
+      var result = year + '-' + month + '-' + date + ' ' + hour + ':' + minute + ':' + second
       // 返回
       return result
     },

@@ -24,7 +24,6 @@ axios.interceptors.request.use(
  * @returns {Promise}
  */
 export function fetch (url, params = {}) {
-  console.log(params)
   return new Promise((resolve, reject) => {
     axios.get(url, {
       params: params

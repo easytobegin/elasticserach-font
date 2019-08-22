@@ -12,7 +12,10 @@ import DepAlarm from '@/components/alarm/DepAlarm.vue'
 import Alarm from '@/components/alarm/Alarm.vue'
 import TopNav from '@/components/nav/TopNav.vue'
 import Setting from '@/components/setting/Setting.vue'
-// import Dashboard from '@/components/Dashboard.vue'
+import Manager from '@/components/alarm/Manager.vue'
+import AlarmMethod from '@/components/alarm/AlarmMethod.vue'
+import Dic from '@/components/setting/Dic.vue'
+import AlarmTemplate from '@/components/alarm/AlarmTemplate.vue'
 
 Vue.use(Router)
 
@@ -52,7 +55,10 @@ let router = new Router({
           iconCls: 'el-icon-alarm-clock',
           menuShow: true,
           children: [
-            { path: '/alarm/dep', component: DepAlarm, name: '应用部署监控', menuShow: true }
+            { path: '/alarm/dep', component: DepAlarm, name: '通用预警配置', menuShow: true },
+            { path: '/alarm/man', component: Manager, name: '告警责任人配置', menuShow: true },
+            { path: '/alarm/method', component: AlarmMethod, name: '告警方式配置', menuShow: true },
+            { path: '/alarm/template', component: AlarmTemplate, name: '预警模板配置', menuShow: true }
           ]
         },
         {
@@ -66,7 +72,8 @@ let router = new Router({
           iconCls: 'el-icon-setting', // 图标样式class
           menuShow: true,
           children: [
-            { path: '/systemSetting/elasticsearch', component: ElasticSetting, name: '索引管理', menuShow: true }
+            { path: '/systemSetting/elasticsearch', component: ElasticSetting, name: '索引管理', menuShow: true },
+            { path: '/systemSetting/dic', component: Dic, name: '字典管理', menuShow: true }
           ]
         }
       ]

@@ -158,7 +158,6 @@ export default {
         indexs.push(index.name)
       })
       this.$post('/deleteIndex', {indexs: indexs}).then((data) => {
-        console.log(data)
         if (data.ok === true) {
           this.getIndex('')
           this.$notify({
